@@ -183,7 +183,7 @@ fun CalculatorApp() {
 @Composable
 private fun SectionHeader(n: Int, title: String) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    Box(Modifier.size(24.dp).clip(CircleShape).background(Lime), contentAlignment = Alignment.Center) { Text("$n", color = Color(0xFF08110A), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp) }
+    Box(Modifier.size(24.dp).clip(CircleShape).background(Lime), contentAlignment = androidx.compose.ui.Alignment.Center) { Text("$n", color = Color(0xFF08110A), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp) }
     Spacer(Modifier.width(8.dp)); Text(title, color = Green, fontWeight = FontWeight.ExtraBold, fontSize = 13.sp)
   }
 }
@@ -193,7 +193,7 @@ private fun ApplianceRow(r: RowState) {
   val on = r.qty > 0
   Surface(shape = RoundedCornerShape(12.dp), color = if (on) Color(0xFFF1FAE8) else Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, if (on) Green else Line)) {
     Row(Modifier.padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) Lime else Color(0xFFE3F2D9)), contentAlignment = Alignment.Center) { Text(r.def.badge, color = if (on) Color(0xFF08110A) else Color(0xFF2E6B12), fontWeight = FontWeight.ExtraBold, fontSize = 10.sp) }
+      Box(Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) Lime else Color(0xFFE3F2D9)), contentAlignment = androidx.compose.ui.Alignment.Center) { Text(r.def.badge, color = if (on) Color(0xFF08110A) else Color(0xFF2E6B12), fontWeight = FontWeight.ExtraBold, fontSize = 10.sp) }
       Spacer(Modifier.width(10.dp))
       Column(Modifier.weight(1f)) {
         Text(r.def.name, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = Ink)
@@ -212,9 +212,9 @@ private fun ApplianceRow(r: RowState) {
 @Composable
 private fun QtyStepper(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onMinus)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
+    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onMinus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
     Text("$qty", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.width(28.dp), textAlign = androidx.compose.ui.text.style.TextAlign.CENTER)
-    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onPlus)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) } }
+    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onPlus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) } }
   }
 }
 
