@@ -213,7 +213,7 @@ private fun ApplianceRow(r: RowState) {
 private fun QtyStepper(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
   Row(verticalAlignment = Alignment.CenterVertically) {
     Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onMinus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
-    Text("$qty", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.width(28.dp), textAlign = androidx.compose.ui.text.style.TextAlign.CENTER)
+    Text("$qty", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.width(28.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onPlus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) } }
   }
 }
