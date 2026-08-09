@@ -1,51 +1,25 @@
-# 🌿 Leaf Solar Calculator (Android app)
+# 🌿 Leaf Solar Calculator (Android)
 
-Standalone Android app that is an **exact replica** of the Solar Load Calculator
-on the Leaf Solar website: https://leafsolar.ng/solar-calculator/
+A native Android app that is an exact replica of the Leaf Solar Load Calculator
+(https://leafsolar.ng/solar-calculator/) — built with Jetpack Compose. **Fully
+offline**, no website chrome, no WebView.
 
-The calculator runs **fully offline** — the HTML/CSS/JS is bundled inside the APK
-and loaded in a WebView, so it is a pixel-perfect copy with no logic drift and no
-internet required.
-
-## What it does (same as the website)
-- Pick common appliances (lights, fans, TV, fridge, AC, pump, etc.) with +/− qty
+## Features (same rules as the website)
+- 12 common appliances with +/− quantity and watts
 - Inverter-model toggle for fridge/AC/fans (disables startup surge)
-- Add custom appliances with automatic surge detection by name
-- Hours-of-use slider (1–18h)
-- Outputs: running load, startup/peak load, daily Wh, inverter KVA, battery Ah,
-  number of 350W panels, and a recommended Leaf Solar package with price + links
-- "Get a custom quote" opens WhatsApp
+- Add custom appliances with automatic surge detection by name (motor/compressor/heating words)
+- 1–18 hours/day slider
+- Outputs: running load, startup/peak load, daily Wh, inverter KVA, battery Ah (12V), number of 350W panels
+- Recommended Leaf Solar package with price + "View package" / "Get quote" (WhatsApp)
 
-## Project layout
-```
-app/src/main/
-  assets/www/index.html   ← the exact calculator (HTML + CSS + JS, self-contained)
-  java/.../MainActivity.kt ← WebView host
-  res/                    ← icon, colors, theme
-reference/                ← source material extracted from the live site
-  website-page.html       (full page as captured)
-  calculator-logic.js     (decoded lcData script)
-  calculator-styles.css   (the .lc styles)
-.github/workflows/build-apk.yml  ← builds APK on every push
-```
+## Calculation engine
+`CalcEngine.kt` ports the website JS verbatim — same appliance list, surge map,
+KVA rounding (`ceil(peak*1.2/1000)` rounded up to nearest 0.5), battery Ah
+`round((Wh*1.3)/12)`, panels `max(2, ceil(running*hours*0.7/350))`, and the same
+package recommendation table.
 
 ## Build
-- Uses Gradle 8.7, AGP 8.5.2, Kotlin 1.9.24, compileSdk 34, minSdk 24.
-- **GitHub Actions:** push to `main` → artifacts `SolarCalculator-debug` and
-  `SolarCalculator-release` (release is signed with the debug key for sideloading).
-- **Local:** `./gradlew assembleDebug` (output in `app/build/outputs/apk/debug/`).
-
-## Updating the calculator to match the website
-If the website calculator changes, re-extract and rebuild `assets/www/index.html`:
-1. Save the live page HTML.
-2. The calculator markup is `<div class="lc" id="leafCalc">…</div>`.
-3. Its logic is base64 in `<script type="text/plain" id="lcData">…</script>`
-   (`base64 -d` to decode).
-4. Its CSS is the `<style>` block immediately before that div (selectors start `.lc`).
-5. Reassemble into `assets/www/index.html` (head + CSS + calculator div + script).
-
-## Package / identity
-- applicationId: `ng.leafsolar.calculator`
-- app label: "Solar Calculator"
-- For Play Store: switch `release` signing to an upload keystore and build an AAB
-  (`./gradlew bundleRelease`).
+- AGP 8.5.2, Kotlin 1.9.24, compileSdk 34, minSdk 24, Compose BOM 2024.06
+- GitHub Actions builds on push: artifacts `SolarCalculator-debug` and `SolarCalculator-release`
+- Local: `gradle assembleDebug` (JDK 17 + Android SDK 34). CI uses the runner's `gradle`.
+- Package: `ng.leafsolar.calculator`

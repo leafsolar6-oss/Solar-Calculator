@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <uses-permission android:name="android.permission.INTERNET"/>
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="https" />
+    </intent>
+  </queries>
   <application
     android:allowBackup="true"
     android:icon="@mipmap/ic_launcher"
     android:label="Solar Calculator"
     android:supportsRtl="true"
-    android:theme="@style/Theme.LeafCalc"
-    android:usesCleartextTraffic="false">
+    android:theme="@style/Theme.LeafCalc">
     <activity
       android:name=".MainActivity"
       android:exported="true"
-      android:configChanges="orientation|screenSize|keyboardHidden"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
