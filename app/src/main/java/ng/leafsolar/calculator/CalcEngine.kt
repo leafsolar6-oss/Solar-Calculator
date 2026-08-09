@@ -30,9 +30,14 @@ object CalcEngine {
     ApplianceDef("Washing Machine", "WM", 3, false)
   )
 
+  // Researched startup/surge multipliers (locked-rotor vs running watts):
+  //  x3 = compressor & induction-motor loads (fridges, non-inverter ACs, fans, pumps,
+  //        washing machines, compressors, power tools)
+  //  x2 = heating appliances with transformers/motors & many universal-motor tools
+  //  x1 = electronics, LED lighting and pure resistive loads (no inrush)
   private val SURGE_MAP = listOf(
-    Regex("\\b(fan|fridge|freezer|refrigerator|ac|air.?cond|pump|washing|washer|compressor|motor|blender|grinder|drill|saw|sewing|vacuum|dryer|dishwasher|extractor|generator)\\b", RegexOption.IGNORE_CASE) to 3,
-    Regex("\\b(microwave|oven|heater|kettle|toaster|iron|press|geyser|boiler|induction|hot\\s?plate)\\b", RegexOption.IGNORE_CASE) to 2
+    Regex("\\b(fan|fridge|freezer|refrigerator|air.?cond|a/?c|pump|washing|washer|compressor|motor|blender|grinder|mixer|drill|saw|sander|grinder|sewing|vacuum|dryer|dishwasher|extractor|generator|airer|cooler|dispenser|ice.?maker|deep.?fryer|air.?compressor)\\b", RegexOption.IGNORE_CASE) to 3,
+    Regex("\\b(microwave|oven|heater|kettle|toaster|iron|press|geyser|boiler|induction|hot\\s?plate|coffee|espresso|rice.?cooker|slow.?cooker|pressure.?cooker|fryer|grill|waffle|steam|hair.?dry|curling|heat.?gun|welder|planer|router|jigsaw|sander|circular)\\b", RegexOption.IGNORE_CASE) to 2
   )
   fun detectSurge(name: String): Int = SURGE_MAP.firstOrNull { it.first.containsMatchIn(name) }?.second ?: 1
 
