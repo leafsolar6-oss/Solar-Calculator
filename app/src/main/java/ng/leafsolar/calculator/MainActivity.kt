@@ -214,7 +214,7 @@ private fun ApplianceRow(r: RowState) {
   Surface(shape = RoundedCornerShape(12.dp), color = if (on) Color(0xFFF1FAE8) else Color.White,
     border = androidx.compose.foundation.BorderStroke(1.5.dp, if (on) Green else Line)) {
     Row(Modifier.padding(horizontal = 10.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) Brush.linearGradient(listOf(Lime, Lime)) else Color(0xFFE3F2D9)), contentAlignment = Alignment.Center) {
+      Box(Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)).background(if (on) Lime else Color(0xFFE3F2D9)), contentAlignment = Alignment.Center) {
         Text(r.def.badge, color = if (on) Color(0xFF08110A) else Color(0xFF2E6B12), fontWeight = FontWeight.ExtraBold, fontSize = 10.sp)
       }
       Spacer(Modifier.width(10.dp))
