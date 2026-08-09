@@ -100,10 +100,9 @@ fun CalculatorApp() {
     appendLine("Running load: ${result.runningW} W (${result.itemCount} items)")
     appendLine("Startup (peak) load: ${result.peakW} W")
     appendLine("Daily energy: ${result.dailyWh} Wh @ ${hours.toInt()} hrs/day")
-    appendLine("Inverter: ${result.recommendedKva} KVA")
-    appendLine("Battery: ~${result.batteryAh12}Ah (12V) / ${result.batteryAh24}Ah (24V) / ${result.batteryAh48}Ah (48V) — ${result.batteryKwh} kWh")
-    appendLine("Solar: ~${result.panels350}×350W or ${result.panels450}×450W")
-    appendLine("Charge controller: ≥${result.chargeCurrentA}A")
+    appendLine("Inverter required: ${result.recommendedKva} KVA")
+    appendLine("Battery capacity: ≈ ${result.batteryAh12} Ah / 12V")
+    appendLine("Solar panels: ≈ ${result.panels350} × 350W")
   }
 
   MaterialTheme(colorScheme = lightColorScheme(primary = Green, surface = Color.White, background = Bg)) {
@@ -181,6 +180,12 @@ fun CalculatorApp() {
         }
         // Simple dropdown menu
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+          Text("CALCULATORS", color = Muted, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp))
+          DropdownMenuItem(text = { Text("Inverter Sizing", fontWeight = FontWeight.Bold) }, onClick = { section = "inverter"; showMenu = false })
+          DropdownMenuItem(text = { Text("Battery Sizing  •  soon", color = Muted) }, enabled = false, onClick = { showMenu = false })
+          DropdownMenuItem(text = { Text("Solar Array  •  soon", color = Muted) }, enabled = false, onClick = { showMenu = false })
+          DropdownMenuItem(text = { Text("Charge Controller  •  soon", color = Muted) }, enabled = false, onClick = { showMenu = false })
+          Divider()
           DropdownMenuItem(text = { Text("Reset all") }, onClick = {
             rows.forEach { it.qty = 0; it.watts = ""; it.inverter = false }; custom.clear(); hours = 6f; showMenu = false
           })
@@ -189,12 +194,6 @@ fun CalculatorApp() {
             val send = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, shareText) }
             context.startActivity(Intent.createChooser(send, "Share sizing"))
           })
-          DropdownMenuItem(text = {
-            Column {
-              Text("Works offline", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-              Text("All calculations run on your device. Internet is only used when you share results.", fontSize = 11.sp, color = Muted)
-            }
-          }, onClick = { showMenu = false })
         }
       }
     }
@@ -289,6 +288,7 @@ private fun ResultCard(r: CalcEngine.Result) {
       Text("Add the wattage for: ${r.missing.joinToString(", ")} — not included.", color = Warn, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(10.dp))
     }
     if (r.runningW > 0) {
+      // These six values mirror the website calculator exactly.
       Stat("Running load", "${r.runningW} W", sub = "/ ${r.itemCount} item${if (r.itemCount == 1) "" else "s"}")
       Stat("Startup (peak) load", "${r.peakW} W", accent = true)
       if (r.surgeItems.isNotEmpty()) Surface(shape = RoundedCornerShape(10.dp), color = Bg) {
@@ -296,26 +296,9 @@ private fun ResultCard(r: CalcEngine.Result) {
       }
       Stat("Daily energy use", "${r.dailyWh} Wh")
       Stat("Inverter required", "${r.recommendedKva} KVA")
-      Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
-        Column(Modifier.padding(14.dp)) {
-          Text("BATTERY BANK", color = Green, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp)
-          Spacer(Modifier.height(8.dp))
-          BatteryRow("12V system", "≈ ${r.batteryAh12} Ah")
-          BatteryRow("24V system", "≈ ${r.batteryAh24} Ah")
-          BatteryRow("48V system", "≈ ${r.batteryAh48} Ah")
-          Divider(Modifier.padding(vertical = 6.dp))
-          BatteryRow("Usable capacity", "≈ ${r.batteryKwh} kWh")
-        }
-      }
-      Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
-        Column(Modifier.padding(14.dp)) {
-          Text("SOLAR ARRAY", color = Green, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp)
-          Spacer(Modifier.height(8.dp))
-          BatteryRow("350W panels", "≈ ${r.panels350} panels")
-          BatteryRow("450W panels", "≈ ${r.panels450} panels")
-          BatteryRow("Charge controller", "≥ ${r.chargeCurrentA} A")
-        }
-      }
+      Stat("Battery capacity", "≈ ${r.batteryAh12} Ah", sub = "/ 12V")
+      Stat("Solar panels", "≈ ${r.panels350} x 350W")
+
       Surface(shape = RoundedCornerShape(12.dp), color = Bg) {
         Text("Motors and compressors (fans, fridges, pumps, non-inverter ACs, microwaves) draw extra current at startup, so the inverter is sized for the peak. Inverter fridges/ACs use soft-start and have no surge. These figures are indicative — a professional site assessment finalises the design.", color = Muted, fontSize = 10.5.sp, lineHeight = 15.sp, modifier = Modifier.padding(12.dp))
       }
@@ -331,14 +314,6 @@ private fun Stat(label: String, value: String, sub: String? = null, accent: Bool
       Text(value, color = if (accent) Warn else Ink, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
       if (sub != null) { Spacer(Modifier.width(4.dp)); Text(sub, color = Muted, fontSize = 11.sp) }
     }
-  }
-}
-
-@Composable
-private fun BatteryRow(label: String, value: String) {
-  Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-    Text(label, color = Muted, fontSize = 12.sp, modifier = Modifier.weight(1f))
-    Text(value, color = Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
   }
 }
 
