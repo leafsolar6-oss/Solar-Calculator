@@ -23,6 +23,9 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
@@ -52,8 +55,18 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-private data class RowState(val def: CalcEngine.ApplianceDef, var qty: Int = 0, var watts: String = "", var inverter: Boolean = false)
-private data class CustomRow(var name: String, var watts: String, var surge: Int)
+private class RowState(val def: CalcEngine.ApplianceDef) {
+  var qty by mutableStateOf(0)
+  var watts by mutableStateOf("")
+  var inverter by mutableStateOf(false)
+}
+private class CustomRow(name: String, watts: String, surge: Int) {
+  var name by mutableStateOf(name)
+  var watts by mutableStateOf(watts)
+  var surge by mutableStateOf(surge)
+  // inverter-model for custom motor/compressor appliances
+  var inverter by mutableStateOf(false)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +84,10 @@ fun CalculatorApp() {
       if (r.qty > 0) list += CalcEngine.Item(r.def.name, r.def.name, r.watts.toIntOrNull() ?: 0, r.qty, if (r.inverter) 1 else r.def.surge)
     }
     custom.forEach { c ->
-      if (c.name.isNotBlank()) list += CalcEngine.Item(c.name, c.name, c.watts.toIntOrNull() ?: 0, 1, c.surge, custom = true)
+      if (c.name.isNotBlank()) {
+        val surge = if (c.inverter) 1 else c.surge
+        list += CalcEngine.Item(c.name, c.name, c.watts.toIntOrNull() ?: 0, 1, surge, custom = true, isInverter = c.inverter)
+      }
     }
     list
   }
@@ -166,14 +182,19 @@ fun CalculatorApp() {
         // Simple dropdown menu
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
           DropdownMenuItem(text = { Text("Reset all") }, onClick = {
-            rows.forEach { it.qty = 0; it.watts = ""; it.inverter = false }; custom.clear(); showMenu = false
+            rows.forEach { it.qty = 0; it.watts = ""; it.inverter = false }; custom.clear(); hours = 6f; showMenu = false
           })
           if (result.runningW > 0) DropdownMenuItem(text = { Text("Share sizing") }, onClick = {
             showMenu = false
             val send = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, shareText) }
             context.startActivity(Intent.createChooser(send, "Share sizing"))
           })
-          DropdownMenuItem(text = { Text("About") }, onClick = { showMenu = false })
+          DropdownMenuItem(text = {
+            Column {
+              Text("Works offline", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+              Text("All calculations run on your device. Internet is only used when you share results.", fontSize = 11.sp, color = Muted)
+            }
+          }, onClick = { showMenu = false })
         }
       }
     }
@@ -204,17 +225,29 @@ private fun ApplianceRow(r: RowState) {
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(r.watts, { v -> r.watts = v.filter { it.isDigit() }; if (r.qty == 0 && v.isNotBlank()) r.qty = 1 }, label = { Text("W", fontSize = 10.sp) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(8.dp), modifier = Modifier.width(90.dp).height(52.dp))
       }
-      QtyStepper(r.qty, onMinus = { if (r.qty > 0) r.qty-- }, onPlus = { r.qty++ })
+      QtyStepper(
+        qty = r.qty,
+        onMinus = { if (r.qty > 0) r.qty-- },
+        onPlus = { r.qty++ },
+        onSet = { r.qty = it.coerceAtLeast(0) }
+      )
     }
   }
 }
 
 @Composable
-private fun QtyStepper(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
+private fun QtyStepper(qty: Int, onMinus: () -> Unit, onPlus: () -> Unit, onSet: (Int) -> Unit) {
+  var edit by remember { mutableStateOf<String?>(null) }
   Row(verticalAlignment = Alignment.CenterVertically) {
-    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onMinus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
-    Text("$qty", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.width(28.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(28.dp).clickable(onClick = onPlus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) } }
+    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(30.dp).clickable(onClick = onMinus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) } }
+    if (edit == null) {
+      Text("$qty", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, modifier = Modifier.width(34.dp).clickable { edit = qty.toString() }, textAlign = TextAlign.Center)
+    } else {
+      OutlinedTextField(edit ?: "", { v -> edit = v.filter { c -> c.isDigit() }; v.toIntOrNull()?.let(onSet) },
+        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        shape = RoundedCornerShape(8.dp), modifier = Modifier.width(56.dp).height(48.dp))
+    }
+    Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line), modifier = Modifier.size(30.dp).clickable(onClick = onPlus)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp)) } }
   }
 }
 
@@ -230,9 +263,15 @@ private fun CustomRowView(c: CustomRow, onDelete: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           OutlinedTextField(watts, { v -> watts = v.filter { it.isDigit() }; c.watts = watts }, singleLine = true, label = { Text("Watts") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(9.dp), modifier = Modifier.width(110.dp))
           Spacer(Modifier.width(10.dp))
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(WarnBg).clickable { checked = !checked; c.surge = if (checked) 3 else 1 }.padding(horizontal = 8.dp, vertical = 6.dp)) {
-            Checkbox(checked = checked, onCheckedChange = { checked = it; c.surge = if (it) 3 else 1 }, modifier = Modifier.size(28.dp))
-            Text("×${if (checked) 3 else 1} surge", color = Warn, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(if (c.inverter) Color(0xFFE3F2D9) else WarnBg).clickable {
+            c.inverter = !c.inverter
+            checked = c.surge > 1 && !c.inverter
+          }.padding(horizontal = 8.dp, vertical = 6.dp)) {
+            Checkbox(checked = c.inverter || checked, onCheckedChange = {
+              if (it) { c.inverter = true } else { c.inverter = false; c.surge = CalcEngine.detectSurge(c.name) }
+              checked = c.surge > 1 && !c.inverter
+            }, modifier = Modifier.size(28.dp))
+            Text(if (c.inverter) "Inverter (no surge)" else "×${c.surge} surge", color = if (c.inverter) Green else Warn, fontSize = 9.5.sp, fontWeight = FontWeight.ExtraBold)
           }
         }
       }
