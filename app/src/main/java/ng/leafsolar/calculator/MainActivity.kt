@@ -77,6 +77,7 @@ fun CalculatorApp() {
   var hours by remember { mutableStateOf(6f) }
   var showHow by remember { mutableStateOf(false) }
   var showMenu by remember { mutableStateOf(false) }
+  var section by remember { mutableStateOf("inverter") }
 
   val items = remember(rows, custom) {
     val list = mutableListOf<CalcEngine.Item>()
