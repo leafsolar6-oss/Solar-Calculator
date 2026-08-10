@@ -102,6 +102,8 @@ fun CalculatorApp() {
   var customName by remember { mutableStateOf("") }
   var customWatts by remember { mutableStateOf("") }
   var splash by remember { mutableStateOf(true) }
+  var page by remember { mutableStateOf(0) }  // 0 Inverter, 1 Battery, 2 Panels, 3 Controller, 4 Cable
+  var batteryVoltage by remember { mutableStateOf(12) }
 
   LaunchedEffect(rows.map { it.qty }.hashCode() + rows.map { it.watts }.hashCode() + rows.map { it.hours }.hashCode() + custom.size + custom.map { it.watts }.hashCode() + custom.map { it.hours }.hashCode()) { Store.save(context, rows, custom) }
   LaunchedEffect(Unit) { kotlinx.coroutines.delay(1200); splash = false }
@@ -181,8 +183,20 @@ fun CalculatorApp() {
             }
           }
         }
-        item { SectionHeader(2, "Inverter Sizing") }
-        item { InlineResults(result, shareText, context) }
+        item {
+          QuickTabs(page) { page = it }
+        }
+        if (page == 0) item { InlineResults(result, shareText, context) }
+        if (page == 1) item { BatterySizingPage(result.dailyWh) { v -> batteryVoltage = v; page = 2 } }
+        if (page == 2) item { PanelSizingPage(result.dailyWh, batteryVoltage) { page = 3 } }
+        if (page == 3) item {
+          val pr = SizingEngine.sizePanels(result.dailyWh, 5.0, 350, 0.78, batteryVoltage)
+          ControllerPage(pr.arrayWatts, pr.panelWatts, pr.panelCount, batteryVoltage) { page = 4 }
+        }
+        if (page == 4) item {
+          val pr = SizingEngine.sizePanels(result.dailyWh, 5.0, 350, 0.78, batteryVoltage)
+          CablePage(pr.arrayWatts, batteryVoltage, pr.panelWatts, pr.panelCount)
+        }
         item { Spacer(Modifier.height(20.dp)) }
       }
     }
@@ -197,6 +211,22 @@ private fun SplashScreen() {
       Spacer(Modifier.height(14.dp))
       Text("LEAF SOLAR", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
       Text("CALCULATOR", color = Lime, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = 4.sp)
+    }
+  }
+}
+
+@Composable
+private fun QuickTabs(page: Int, onPage: (Int)->Unit) {
+  val tabs = listOf("Inverter","Battery","Panels","Controller","Cable")
+  Surface(shape = RoundedCornerShape(12.dp), color = GreenDark) {
+    Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      tabs.forEachIndexed { i,t ->
+        Surface(shape = RoundedCornerShape(8.dp), color = if (page==i) Lime else Color.Transparent,
+          modifier = Modifier.weight(1f).clickable { onPage(i) }) {
+          Text(t, color = if (page==i) Color(0xFF08110A) else Color.White, fontWeight = FontWeight.ExtraBold,
+            fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 8.dp))
+        }
+      }
     }
   }
 }
