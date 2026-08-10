@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Clear
@@ -102,8 +103,11 @@ fun CalculatorApp() {
   var customName by remember { mutableStateOf("") }
   var customWatts by remember { mutableStateOf("") }
   var splash by remember { mutableStateOf(true) }
-  var page by remember { mutableStateOf(0) }  // 0 Inverter, 1 Battery, 2 Panels, 3 Controller, 4 Cable
+  var page by remember { mutableStateOf(0) }
+  var showMenu by remember { mutableStateOf(false) }
   var batteryVoltage by remember { mutableStateOf(12) }
+  var sunHours by remember { mutableStateOf("5") }
+  var panelW by remember { mutableStateOf("350") }
 
   LaunchedEffect(rows.map { it.qty }.hashCode() + rows.map { it.watts }.hashCode() + rows.map { it.hours }.hashCode() + custom.size + custom.map { it.watts }.hashCode() + custom.map { it.hours }.hashCode()) { Store.save(context, rows, custom) }
   LaunchedEffect(Unit) { kotlinx.coroutines.delay(1200); splash = false }
@@ -136,6 +140,14 @@ fun CalculatorApp() {
           Column { Text("Leaf Solar Calculator", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp); Text("Inverter Sizing", color = Lime, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
           Spacer(Modifier.weight(1f))
           if (result.runningW > 0) IconButton(onClick = { val i = Intent(Intent.ACTION_SEND).apply { type="text/plain"; putExtra(Intent.EXTRA_TEXT, shareText) }; context.startActivity(Intent.createChooser(i,"Share sizing")) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Share, null, tint = Color.White, modifier = Modifier.size(18.dp)) }
+          Box {
+            IconButton(onClick = { showMenu = true }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Menu, "Menu", tint = Color.White, modifier = Modifier.size(20.dp)) }
+            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+              listOf("Inverter Sizing","Battery Sizing","Panel Sizing","Charge Controller","Cable Sizing").forEachIndexed { i,t ->
+                DropdownMenuItem(text = { Text(t, fontWeight = if (page==i) FontWeight.ExtraBold else FontWeight.Normal) }, onClick = { page=i; showMenu=false })
+              }
+            }
+          }
           TextButton(onClick = {
             rows.forEach { it.qty = 0; it.watts = ""; it.inverter = false; it.hours = "" }
             custom.clear()
@@ -143,63 +155,85 @@ fun CalculatorApp() {
         }
       }
     }) { pad ->
-      LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item {
-          Surface(shape = RoundedCornerShape(14.dp), color = GreenDark) {
-            Column(Modifier.padding(12.dp)) {
-              Text("Size your solar inverter", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
-              Spacer(Modifier.height(4.dp))
-              Surface(color = Color(0x14FFFFFF), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { showHow = !showHow }) { Text(if (showHow) "How do I find the watt?" else "How do I find the watt? ▾", color = Lime, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) }
-              AnimatedVisibility(showHow) { Surface(color = Color(0xFF0E1B12), shape = RoundedCornerShape(10.dp), modifier = Modifier.padding(top = 6.dp)) { Text("Check the nameplate for \"W\" or \"Watts\". For motors/ACs use input watts, not HP. If only amps show, multiply by voltage (e.g. 1.0A x 230V = 230W).", color = Color(0xFFD6E9D8), fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(10.dp)) } }
-            }
-          }
-        }
-        item { SectionHeader(1, "Add your appliances") }
-        items(rows) { ApplianceRow(it) }
-        item {
-          Surface(shape = RoundedCornerShape(12.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
-            Column(Modifier.padding(10.dp)) {
-              Text("+ Add a custom appliance", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
-              Spacer(Modifier.height(6.dp))
-              Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(customName, { customName = it }, label = { Text("Name", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f).height(52.dp))
-                OutlinedTextField(customWatts, { customWatts = it.filter { c -> c.isDigit() } }, label = { Text("W", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(8.dp), modifier = Modifier.width(80.dp).height(52.dp))
-              }
-              Spacer(Modifier.height(6.dp))
-              Button(onClick = { if (customName.isNotBlank()) { custom.add(CustomRow(customName.trim(), customWatts, CalcEngine.detectSurge(customName))); customName=""; customWatts="" } }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Ink), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) { Text("ADD", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
-            }
-          }
-        }
-        items(custom) { CustomRowView(it, onDelete = { custom.remove(it) }) }
-        item {
-          Surface(shape = RoundedCornerShape(12.dp), color = GreenDark) {
-            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) { Text("TOTAL WATTS", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold); Text("$totalWatts W", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold) }
-                Column(horizontalAlignment = Alignment.End) { Text("STARTUP PEAK", color = Color(0xFFB9C7BC), fontSize = 8.5.sp, fontWeight = FontWeight.ExtraBold); Text("$totalPeak W", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
-              }
-              Divider(color = Color(0xFF2A4A33))
-              Row(verticalAlignment = Alignment.CenterVertically) { Text("TOTAL WATT-HOURS / DAY", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f)); Text("$totalWh Wh", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold) }
-            }
-          }
-        }
-        item {
-          QuickTabs(page) { page = it }
-        }
-        if (page == 0) item { InlineResults(result, shareText, context) }
-        if (page == 1) item { BatterySizingPage(result.dailyWh) { v -> batteryVoltage = v; page = 2 } }
-        if (page == 2) item { PanelSizingPage(result.dailyWh, batteryVoltage) { page = 3 } }
-        if (page == 3) item {
-          val pr = SizingEngine.sizePanels(result.dailyWh, 5.0, 350, 0.78, batteryVoltage)
-          ControllerPage(pr.arrayWatts, pr.panelWatts, pr.panelCount, batteryVoltage) { page = 4 }
-        }
-        if (page == 4) item {
-          val pr = SizingEngine.sizePanels(result.dailyWh, 5.0, 350, 0.78, batteryVoltage)
-          CablePage(pr.arrayWatts, batteryVoltage, pr.panelWatts, pr.panelCount)
-        }
-        item { Spacer(Modifier.height(20.dp)) }
+      when (page) {
+        0 -> InverterScreen(pad, result, shareText, context, showHow, { showHow = it }, rows, custom, customName, { customName = it }, customWatts, { customWatts = it }, { n -> custom.add(CustomRow(n, customWatts, CalcEngine.detectSurge(n))); customName=""; customWatts="" }, totalWatts, totalPeak, totalWh)
+        1 -> Box(Modifier.padding(pad).fillMaxSize()) { BatterySizingPage(result.dailyWh) { v -> batteryVoltage = v; page = 2 } }
+        2 -> Box(Modifier.padding(pad).fillMaxSize()) { PanelSizingPageFull(result.dailyWh, batteryVoltage, sunHours, { sunHours = it }, panelW, { panelW = it }) { page = 3 } }
+        3 -> Box(Modifier.padding(pad).fillMaxSize()) {
+               val pr = SizingEngine.sizePanels(result.dailyWh, sunHours.toDoubleOrNull() ?: 5.0, panelW.toIntOrNull() ?: 350, 0.78, batteryVoltage)
+               ControllerPage(pr.arrayWatts, pr.panelWatts, pr.panelCount, batteryVoltage) { page = 4 }
+             }
+        4 -> Box(Modifier.padding(pad).fillMaxSize()) {
+               val pr = SizingEngine.sizePanels(result.dailyWh, sunHours.toDoubleOrNull() ?: 5.0, panelW.toIntOrNull() ?: 350, 0.78, batteryVoltage)
+               CablePage(pr.arrayWatts, batteryVoltage, pr.panelWatts, pr.panelCount)
+             }
       }
     }
+  }
+}
+
+@Composable
+private fun InverterScreen(
+  pad: PaddingValues,
+  result: CalcEngine.Result,
+  shareText: String,
+  context: android.content.Context,
+  showHow: Boolean,
+  setShowHow: (Boolean)->Unit,
+  rows: List<RowState>,
+  custom: MutableList<CustomRow>,
+  customName: String,
+  setCustomName: (String)->Unit,
+  customWatts: String,
+  setCustomWatts: (String)->Unit,
+  onAddCustom: (String)->Unit,
+  totalWatts: Int,
+  totalPeak: Int,
+  totalWh: Int
+) {
+  LazyColumn(Modifier.padding(pad).fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    item {
+      Surface(shape = RoundedCornerShape(14.dp), color = GreenDark) {
+        Column(Modifier.padding(12.dp)) {
+          Text("Size your solar inverter", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+          Spacer(Modifier.height(4.dp))
+          Surface(color = Color(0x14FFFFFF), shape = RoundedCornerShape(8.dp), modifier = Modifier.clickable { setShowHow(!showHow) }) { Text(if (showHow) "How do I find the watt?" else "How do I find the watt? ▾", color = Lime, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) }
+          AnimatedVisibility(showHow) { Surface(color = Color(0xFF0E1B12), shape = RoundedCornerShape(10.dp), modifier = Modifier.padding(top = 6.dp)) { Text("Check the nameplate for W/Watts. For motors/ACs use input watts, not HP. If only amps show, multiply by voltage (1.0A x 230V = 230W).", color = Color(0xFFD6E9D8), fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(10.dp)) } }
+        }
+      }
+    }
+    item { SectionHeader(1, "Add your appliances") }
+    items(rows) { ApplianceRow(it) }
+    item {
+      Surface(shape = RoundedCornerShape(12.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
+        Column(Modifier.padding(10.dp)) {
+          Text("+ Add a custom appliance", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
+          Spacer(Modifier.height(6.dp))
+          Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedTextField(customName, setCustomName, label = { Text("Name", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f).height(52.dp))
+            OutlinedTextField(customWatts, setCustomWatts, label = { Text("W", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(8.dp), modifier = Modifier.width(80.dp).height(52.dp))
+          }
+          Spacer(Modifier.height(6.dp))
+          Button(onClick = { if (customName.isNotBlank()) onAddCustom(customName.trim()) }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Ink), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) { Text("ADD", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
+        }
+      }
+    }
+    items(custom) { CustomRowView(it, onDelete = { custom.remove(it) }) }
+    item {
+      Surface(shape = RoundedCornerShape(12.dp), color = GreenDark) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) { Text("TOTAL WATTS", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold); Text("$totalWatts W", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold) }
+            Column(horizontalAlignment = Alignment.End) { Text("STARTUP PEAK", color = Color(0xFFB9C7BC), fontSize = 8.5.sp, fontWeight = FontWeight.ExtraBold); Text("$totalPeak W", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+          }
+          Divider(color = Color(0xFF2A4A33))
+          Row(verticalAlignment = Alignment.CenterVertically) { Text("TOTAL WATT-HOURS / DAY", color = Lime, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f)); Text("$totalWh Wh", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold) }
+        }
+      }
+    }
+    item { SectionHeader(2, "Inverter Sizing") }
+    item { InlineResults(result, shareText, context) }
+    item { Spacer(Modifier.height(20.dp)) }
   }
 }
 
@@ -211,22 +245,6 @@ private fun SplashScreen() {
       Spacer(Modifier.height(14.dp))
       Text("LEAF SOLAR", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
       Text("CALCULATOR", color = Lime, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, letterSpacing = 4.sp)
-    }
-  }
-}
-
-@Composable
-private fun QuickTabs(page: Int, onPage: (Int)->Unit) {
-  val tabs = listOf("Inverter","Battery","Panels","Controller","Cable")
-  Surface(shape = RoundedCornerShape(12.dp), color = GreenDark) {
-    Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-      tabs.forEachIndexed { i,t ->
-        Surface(shape = RoundedCornerShape(8.dp), color = if (page==i) Lime else Color.Transparent,
-          modifier = Modifier.weight(1f).clickable { onPage(i) }) {
-          Text(t, color = if (page==i) Color(0xFF08110A) else Color.White, fontWeight = FontWeight.ExtraBold,
-            fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 8.dp))
-        }
-      }
     }
   }
 }

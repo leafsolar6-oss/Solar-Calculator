@@ -176,3 +176,25 @@ fun NumField(label: String, value: String, onChange: (String)->Unit, placeholder
 fun Note(text: String) {
   Surface(shape = RoundedCornerShape(10.dp), color = Bg) { Text(text, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(10.dp)) }
 }
+
+@Composable
+fun PanelSizingPageFull(dailyWh: Int, systemVoltage: Int, sunStr: String, onSun: (String)->Unit, panelStr: String, onPanel: (String)->Unit, onNext: () -> Unit) {
+  val sh = sunStr.toDoubleOrNull() ?: 5.0
+  val pw = panelStr.toIntOrNull() ?: 350
+  val r = SizingEngine.sizePanels(dailyWh, sh, pw, 0.78, systemVoltage)
+  Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Card("Daily energy use", "$dailyWh Wh")
+    InputCard {
+      NumField("Peak sun hours/day", sunStr, onSun, "5")
+      Spacer(Modifier.height(8.dp))
+      NumField("Panel wattage (W)", panelStr, onPanel, "350")
+    }
+    Stat("Array size needed", "${r.arrayWatts} W")
+    Stat("Panels required", "${r.panelCount} x ${r.panelWatts}W", big = true)
+    Card("Suggested layout", "${r.strings} string${if(r.strings>1)"s" else ""} of ${r.perString} panels")
+    Stat("Approx charge current", "${r.chargeCurrentA} A", sub = "@${systemVoltage}V")
+    Spacer(Modifier.height(4.dp))
+    Button(onClick = onNext, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = GreenDark)) { Text("CONTINUE TO CHARGE CONTROLLER →", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+    Note("Derate ~0.78 for heat, dust, wiring and controller losses.")
+  }
+}
