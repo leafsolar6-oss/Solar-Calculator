@@ -155,8 +155,8 @@ fun CalculatorApp() {
               Text("+ Add a custom appliance", fontWeight = FontWeight.Bold, fontSize = 12.5.sp)
               Spacer(Modifier.height(6.dp))
               Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedTextField(customName, { customName = it }, label = { Text("Name", fontSize = 8.sp) }, singleLine = true, shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f))
-                OutlinedTextField(customWatts, { customWatts = it.filter { c -> c.isDigit() } }, label = { Text("W", fontSize = 8.sp) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(8.dp), modifier = Modifier.width(72.dp))
+                OutlinedTextField(customName, { customName = it }, label = { Text("Name", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp), shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f).height(52.dp))
+                OutlinedTextField(customWatts, { customWatts = it.filter { c -> c.isDigit() } }, label = { Text("W", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(8.dp), modifier = Modifier.width(80.dp).height(52.dp))
               }
               Spacer(Modifier.height(6.dp))
               Button(onClick = { if (customName.isNotBlank()) { custom.add(CustomRow(customName.trim(), customWatts, CalcEngine.detectSurge(customName))); customName=""; customWatts="" } }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Ink), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) { Text("ADD", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
@@ -226,7 +226,7 @@ private fun ApplianceRow(r: RowState) {
       }
       Spacer(Modifier.height(5.dp))
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        OutlinedTextField(r.watts, { v -> r.watts = v.filter { it.isDigit() }; if (r.qty == 0 && v.isNotBlank()) r.qty = 1 }, label = { Text("W", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(48.dp))
+        OutlinedTextField(r.watts, { v -> r.watts = v.filter { it.isDigit() }; if (r.qty == 0 && v.isNotBlank()) r.qty = 1 }, label = { Text("W", fontSize = 8.sp) }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(52.dp))
         OutlinedTextField(r.hours, { v -> r.hours = v.filter { it.isDigit() } }, label = { Text("Hrs/day", fontSize = 7.5.sp, maxLines = 1) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.width(72.dp).height(48.dp))
         if (on && w > 0) Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(78.dp)) {
           Text("W", color = Muted, fontSize = 7.5.sp, fontWeight = FontWeight.ExtraBold); Text("$total", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
@@ -257,13 +257,13 @@ private fun CustomRowView(c: CustomRow, onDelete: () -> Unit) {
   Surface(shape = RoundedCornerShape(10.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
     Column(Modifier.padding(8.dp)) {
       Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(c.name, { c.name = it }, singleLine = true, label = { Text("Appliance name", fontSize = 9.sp) }, shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(48.dp))
+        OutlinedTextField(c.name, { c.name = it }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp), label = { Text("Appliance name", fontSize = 8.sp) }, shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(52.dp))
         Spacer(Modifier.width(6.dp)); TextButton(onClick = onDelete, contentPadding = PaddingValues(horizontal = 6.dp)) { Text("x", color = Muted, fontWeight = FontWeight.Bold) }
       }
       Spacer(Modifier.height(5.dp))
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        OutlinedTextField(watts, { v -> watts = v.filter { it.isDigit() }; c.watts = watts }, singleLine = true, label = { Text("W", fontSize = 8.sp) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(48.dp))
-        OutlinedTextField(c.hours, { v -> c.hours = v.filter { it.isDigit() } }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp, textAlign = TextAlign.Center), label = { Text("Hrs", fontSize = 7.sp, maxLines = 1) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.width(68.dp).height(48.dp))
+        OutlinedTextField(watts, { v -> watts = v.filter { it.isDigit() }; c.watts = watts }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold), label = { Text("W", fontSize = 8.sp) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.weight(1f).height(52.dp))
+        OutlinedTextField(c.hours, { v -> c.hours = v.filter { it.isDigit() } }, singleLine = true, textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center), label = { Text("Hrs", fontSize = 7.sp, maxLines = 1) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), shape = RoundedCornerShape(7.dp), modifier = Modifier.width(72.dp).height(52.dp))
         if (tw > 0) Column(horizontalAlignment = Alignment.End, modifier = Modifier.width(64.dp)) { Text("W", color = Muted, fontSize = 7.5.sp, fontWeight = FontWeight.ExtraBold); Text("$tw", color = Ink, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold); if (hrs != null && hrs > 0) { Text("Wh/day", color = Green, fontSize = 7.5.sp, fontWeight = FontWeight.ExtraBold); Text("${tw * hrs}", color = GreenDark, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold) } }
         Spacer(Modifier.width(2.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(if (c.inverter) Color(0xFFE3F2D9) else WarnBg).clickable { c.inverter = !c.inverter; checked = c.surge > 1 && !c.inverter }.padding(horizontal = 4.dp, vertical = 3.dp)) {
