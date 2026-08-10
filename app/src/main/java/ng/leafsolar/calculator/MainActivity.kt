@@ -59,13 +59,13 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-private class RowState(val def: CalcEngine.ApplianceDef) {
+internal class RowState(val def: CalcEngine.ApplianceDef) {
   var qty by mutableStateOf(0)
   var watts by mutableStateOf("")
   var inverter by mutableStateOf(false)
   var hours by mutableStateOf("")
 }
-private class CustomRow(name: String, watts: String, surge: Int) {
+internal class CustomRow(name: String, watts: String, surge: Int) {
   var name by mutableStateOf(name)
   var watts by mutableStateOf(watts)
   var surge by mutableStateOf(surge)
