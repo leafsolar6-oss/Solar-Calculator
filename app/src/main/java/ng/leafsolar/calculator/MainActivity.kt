@@ -37,13 +37,13 @@ import androidx.compose.ui.unit.sp
 import org.json.JSONArray
 import org.json.JSONObject
 
-private val Lime = Color(0xFF76D50B)
-private val Green = Color(0xFF3CA506)
-private val GreenDark = Color(0xFF102417)
-private val Ink = Color(0xFF14201A)
-private val Muted = Color(0xFF5E6B62)
-private val Line = Color(0xFFE1E7E1)
-private val Bg = Color(0xFFF5F9F3)
+internal val Lime = Color(0xFF76D50B)
+internal val Green = Color(0xFF3CA506)
+internal val GreenDark = Color(0xFF102417)
+internal val Ink = Color(0xFF14201A)
+internal val Muted = Color(0xFF5E6B62)
+internal val Line = Color(0xFFE1E7E1)
+internal val Bg = Color(0xFFF5F9F3)
 private val Warn = Color(0xFFB26A00)
 private val WarnBg = Color(0xFFFFF4D6)
 
