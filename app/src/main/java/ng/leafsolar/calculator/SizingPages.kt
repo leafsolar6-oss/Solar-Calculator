@@ -24,18 +24,24 @@ private val CardLine = Color(0xFFE1E7E1)
 
 @Composable
 fun BatterySizingPage(dailyWh: Int, onNext: (Int) -> Unit) {
+  var whInput by remember { mutableStateOf(dailyWh.toString()) }
   var autonomy by remember { mutableStateOf("1") }
   var voltage by remember { mutableStateOf("12") }
   var dod by remember { mutableStateOf("0.5") }
   var unitAh by remember { mutableStateOf("200") }
+  val wh = whInput.toIntOrNull() ?: dailyWh
   val aut = autonomy.toIntOrNull() ?: 1
   val v = voltage.toIntOrNull() ?: 12
   val d = dod.toDoubleOrNull() ?: 0.5
-  val r = SizingEngine.sizeBattery(dailyWh, v, d, aut)
+  val r = SizingEngine.sizeBattery(wh, v, d, aut)
   val unit = unitAh.toIntOrNull() ?: 200
   val plan = SizingEngine.planBank(r.bankAh, v, unit, 12)
   Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    Card("Daily energy use (from inverter sizing)", "$dailyWh Wh")
+    InputCard {
+      NumField("Total watt-hours / day (Wh)", whInput, { whInput = it.filter { c -> c.isDigit() } }, dailyWh.toString())
+      Spacer(Modifier.height(6.dp))
+      Text("Pre-filled from inverter sizing — edit if you have your own figure.", color = Muted, fontSize = 10.sp)
+    }
     InputCard {
       NumField("Autonomy (days)", autonomy, { autonomy = it.filter { c -> c.isDigit() } }, "1")
       Spacer(Modifier.height(8.dp))

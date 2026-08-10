@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Remove
@@ -35,6 +36,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -105,6 +109,9 @@ fun CalculatorApp() {
   var splash by remember { mutableStateOf(true) }
   var page by remember { mutableStateOf(0) }
   var showMenu by remember { mutableStateOf(false) }
+  var showCloud by remember { mutableStateOf(false) }
+  var cloudMsg by remember { mutableStateOf<String?>(null) }
+  val scope = rememberCoroutineScope()
   var batteryVoltage by remember { mutableStateOf(12) }
   var sunHours by remember { mutableStateOf("5") }
   var panelW by remember { mutableStateOf("350") }
@@ -140,6 +147,7 @@ fun CalculatorApp() {
           Column { Text("Leaf Solar Calculator", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp); Text("Inverter Sizing", color = Lime, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
           Spacer(Modifier.weight(1f))
           if (result.runningW > 0) IconButton(onClick = { val i = Intent(Intent.ACTION_SEND).apply { type="text/plain"; putExtra(Intent.EXTRA_TEXT, shareText) }; context.startActivity(Intent.createChooser(i,"Share sizing")) }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Share, null, tint = Color.White, modifier = Modifier.size(18.dp)) }
+          IconButton(onClick = { showCloud = true }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Cloud, "Cloud sync", tint = Color.White, modifier = Modifier.size(20.dp)) }
           Box {
             IconButton(onClick = { showMenu = true }, modifier = Modifier.size(38.dp)) { Icon(Icons.Default.Menu, "Menu", tint = Color.White, modifier = Modifier.size(20.dp)) }
             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
@@ -168,6 +176,53 @@ fun CalculatorApp() {
                CablePage(pr.arrayWatts, batteryVoltage, pr.panelWatts, pr.panelCount)
              }
       }
+    }
+    if (showCloud) {
+      var code by remember { mutableStateOf("") }
+      var busy by remember { mutableStateOf(false) }
+      AlertDialog(
+        onDismissRequest = { showCloud = false; cloudMsg = null },
+        confirmButton = { TextButton(onClick = { showCloud = false; cloudMsg = null }) { Text("DONE") } },
+        title = { Text("Cloud sync", fontWeight = FontWeight.ExtraBold) },
+        text = {
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Save your calculation online with a short code, then load it on another device using the same code.", fontSize = 12.sp, color = Muted)
+            OutlinedTextField(code, { code = it.uppercase().take(12).filter { ch -> ch.isLetterOrDigit() } },
+              label = { Text("Your code (e.g. HOME123)") }, singleLine = true, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              Button(onClick = {
+                if (code.length >= 4 && !busy) {
+                  busy = true; cloudMsg = null
+                  scope.launch(Dispatchers.IO) {
+                    val ok = CloudSync.save(code, rows, custom, result.dailyWh)
+                    withContext(Dispatchers.Main) { cloudMsg = if (ok) "Saved as ${code.uppercase()}" else "Save failed"; busy = false }
+                  }
+                }
+              }, enabled = code.length >= 4 && !busy, shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = GreenDark)) { Text("SAVE", fontSize = 11.sp) }
+              OutlinedButton(onClick = {
+                if (code.length >= 4 && !busy) {
+                  busy = true; cloudMsg = null
+                  scope.launch(Dispatchers.IO) {
+                    val d = CloudSync.load(code)
+                    withContext(Dispatchers.Main) {
+                      if (d != null) {
+                        rows.forEachIndexed { i, r ->
+                          val x = d.first.getOrNull(i)
+                          if (x != null) { r.qty = (x["qty"]?:"0").toIntOrNull()?:0; r.watts = x["watts"]?:""; r.inverter = x["inverter"]=="true"; r.hours = x["hours"]?:"" }
+                        }
+                        custom.clear()
+                        d.second.forEach { cw -> custom.add(CustomRow(cw["name"]?:"", cw["watts"]?:"", (cw["surge"]?:"1").toIntOrNull()?:1).apply { inverter = cw["inverter"]=="true"; hours = cw["hours"]?:"" }) }
+                        cloudMsg = "Loaded from ${code.uppercase()}"
+                      } else cloudMsg = "No saved data for ${code.uppercase()}"
+                      busy = false
+                    }
+                  }
+                }
+              }, enabled = code.length >= 4 && !busy, shape = RoundedCornerShape(8.dp), modifier = Modifier.weight(1f)) { Text("LOAD", fontSize = 11.sp) }
+            }
+            cloudMsg?.let { Text(it, color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+          }
+        })
     }
   }
 }
