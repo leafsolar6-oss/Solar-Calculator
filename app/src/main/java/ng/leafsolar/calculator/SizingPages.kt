@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.sp
 
 private val CardBG = Color(0xFFFFFFFF)
 private val CardLine = Color(0xFFE1E7E1)
-private val Bg = Color(0xFFF5F9F3)
 
 @Composable
 fun BatterySizingPage(dailyWh: Int, onNext: (Int) -> Unit) {
