@@ -24,23 +24,25 @@ private val CardLine = Color(0xFFE1E7E1)
 
 @Composable
 fun BatterySizingPage(dailyWh: Int, onNext: (Int) -> Unit) {
-  var whInput by remember { mutableStateOf(dailyWh.toString()) }
+  var whInput by remember { mutableStateOf(if (dailyWh > 0) dailyWh.toString() else "") }
   var autonomy by remember { mutableStateOf("1") }
   var voltage by remember { mutableStateOf("12") }
   var dod by remember { mutableStateOf("0.5") }
+  var dodPct by remember { mutableStateOf("50") }
   var unitAh by remember { mutableStateOf("200") }
-  val wh = whInput.toIntOrNull() ?: dailyWh
+  val wh = whInput.toIntOrNull() ?: 0
   val aut = autonomy.toIntOrNull() ?: 1
   val v = voltage.toIntOrNull() ?: 12
-  val d = dod.toDoubleOrNull() ?: 0.5
+  val dp = dodPct.toIntOrNull() ?: 50
+  val d = (dp / 100.0).coerceIn(0.1, 0.95)
   val r = SizingEngine.sizeBattery(wh, v, d, aut)
   val unit = unitAh.toIntOrNull() ?: 200
   val plan = SizingEngine.planBank(r.bankAh, v, unit, 12)
   Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
     InputCard {
-      NumField("Total watt-hours / day (Wh)", whInput, { whInput = it.filter { c -> c.isDigit() } }, dailyWh.toString())
+      NumField("Total watt-hours / day (Wh)", whInput, { whInput = it.filter { c -> c.isDigit() } }, if (dailyWh>0) dailyWh.toString() else "e.g. 2400")
       Spacer(Modifier.height(6.dp))
-      Text("Pre-filled from inverter sizing — edit if you have your own figure.", color = Muted, fontSize = 10.sp)
+      Text(if (dailyWh>0) "Pre-filled from inverter sizing — edit if you have your own figure." else "Enter your total daily energy use in watt-hours.", color = Muted, fontSize = 10.sp)
     }
     InputCard {
       NumField("Autonomy (days)", autonomy, { autonomy = it.filter { c -> c.isDigit() } }, "1")
@@ -52,15 +54,23 @@ fun BatterySizingPage(dailyWh: Int, onNext: (Int) -> Unit) {
         }
       }
       Spacer(Modifier.height(8.dp))
-      Text("Battery type / DoD", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+      Text("Depth of discharge", fontWeight = FontWeight.Bold, fontSize = 12.sp)
       Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf("0.5" to "Flooded", "0.6" to "AGM/Gel", "0.8" to "LiFePO4").forEach { (k,lab) ->
-          FilterChip(selected = dod == k, onClick = { dod = k }, label = { Text(lab) })
+        listOf("50" to "Flooded", "60" to "AGM/Gel", "80" to "LiFePO4").forEach { (k,lab) ->
+          FilterChip(selected = dodPct == k, onClick = { dodPct = k; dod = (k.toInt()/100.0).toString() }, label = { Text(lab) })
         }
       }
+      Spacer(Modifier.height(8.dp))
+      OutlinedTextField(dodPct, { v2 -> val n = v2.filter{it.isDigit()}.take(2); dodPct=n; if(n.isNotEmpty()) dod=(n.toInt()/100.0).toString() },
+        label = { Text("Custom DoD (%)", fontSize = 10.sp) }, singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth(),
+        trailingIcon = { Text("%", color=Muted, modifier=Modifier.padding(end=10.dp)) })
+      Spacer(Modifier.height(4.dp))
+      Text("Using ${dp}% depth of discharge.", color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
     Stat("Required usable capacity", "${r.usableAh} Ah", sub = "@${v}V")
-    Stat("Bank size (at ${(d*100).toInt()}% DoD)", "${r.bankAh} Ah", sub = "≈ ${r.bankKwh} kWh")
+    Stat("Bank size (${dp}% DoD)", "${r.bankAh} Ah", sub = "≈ ${r.bankKwh} kWh")
     if (plan.units > 0) {
       Card("Suggested bank (${unit}Ah 12V units)", "${plan.units} units = ${plan.series}S × ${plan.parallel}P  (≈ ${plan.kwh} kWh)")
     }
@@ -69,7 +79,7 @@ fun BatterySizingPage(dailyWh: Int, onNext: (Int) -> Unit) {
       colors = ButtonDefaults.buttonColors(containerColor = GreenDark)) {
       Text("CONTINUE TO PANEL SIZING →", fontWeight = FontWeight.Bold, fontSize = 12.sp)
     }
-    Note("LiFePO4 can use 80% DoD; lead-acid typically 50%. Add more autonomy days for cloudy seasons.")
+    Note("Flooded lead-acid: ~50% DoD. AGM/Gel: ~60%. LiFePO4: 80–90%. Shallower discharge extends battery life.")
   }
 }
 
