@@ -8,7 +8,7 @@ import java.net.URL
 object CloudSync {
   private const val BASE = "https://leafsolar.ng/wp-json/lfx/v1"
 
-  fun save(code: String, rows: List<RowState>, custom: List<CustomRow>, dailyWh: Int): Boolean {
+  internal fun save(code: String, rows: List<RowState>, custom: List<CustomRow>, dailyWh: Int): Boolean {
     return try {
       val arr = JSONArray()
       rows.forEach { r -> arr.put(JSONObject().put("qty", r.qty).put("watts", r.watts).put("inverter", r.inverter).put("hours", r.hours)) }
