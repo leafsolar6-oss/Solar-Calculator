@@ -48,6 +48,20 @@ private val Bg = Color(0xFFF5F9F3)
 private val Warn = Color(0xFFB26A00)
 private val WarnBg = Color(0xFFFFF4D6)
 
+@Composable
+private fun SplashScreen() {
+  Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(GreenDark, Green))), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Box(Modifier.size(72.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Lime, Green))), contentAlignment = Alignment.Center) {
+        Icon(Icons.Default.Bolt, null, tint = Color.White, modifier = Modifier.size(40.dp))
+      }
+      Spacer(Modifier.height(18.dp))
+      Text("LEAF SOLAR", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 26.sp, letterSpacing = 2.sp)
+      Text("CALCULATOR", color = Lime, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, letterSpacing = 6.sp)
+    }
+  }
+}
+
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -71,6 +85,9 @@ private class CustomRow(name: String, watts: String, surge: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculatorApp() {
+  var splash by remember { mutableStateOf(true) }
+  LaunchedEffect(Unit) { kotlinx.coroutines.delay(1600); splash = false }
+  if (splash) { SplashScreen(); return }
   val context = LocalContext.current
   val rows = remember { CalcEngine.APPS.map { RowState(it) } }
   val custom = remember { mutableStateListOf<CustomRow>() }
@@ -162,6 +179,22 @@ fun CalculatorApp() {
             }
           }
           items(custom) { CustomRowView(it, onDelete = { custom.remove(it) }) }
+          item {
+            val totalWatts = items.filter { it.watts > 0 }.sumOf { it.watts * it.qty }
+            val totalPeak = items.filter { it.watts > 0 }.sumOf { it.watts * it.qty * it.surge }
+            Surface(shape = RoundedCornerShape(14.dp), color = GreenDark, border = androidx.compose.foundation.BorderStroke(1.5.dp, Green)) {
+              Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                  Text("TOTAL WATTS", color = Lime, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                  Text("$totalWatts W", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                }
+                if (totalPeak > totalWatts) Column(horizontalAlignment = Alignment.End) {
+                  Text("STARTUP PEAK", color = Color(0xFFB9C7BC), fontSize = 9.sp, fontWeight = FontWeight.ExtraBold)
+                  Text("$totalPeak W", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                }
+              }
+            }
+          }
           item {
             Surface(shape = RoundedCornerShape(14.dp), color = Color.White, border = androidx.compose.foundation.BorderStroke(1.5.dp, Line)) {
               Column(Modifier.padding(14.dp)) {
